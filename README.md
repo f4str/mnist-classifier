@@ -1,2 +1,2 @@
-# Digit Recognizer
+# MNIST Handwritten Digit Classifier
 

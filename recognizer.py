@@ -1,6 +1,6 @@
 import tkinter as tk
 import numpy as np
-import network as nn
+import network
 from PIL import Image
 
 class Recognizer():
@@ -40,7 +40,9 @@ class Recognizer():
 		self.canvas.bind('<ButtonRelease-1>', self.reset)
 		self.canvas.bind('<ButtonRelease-3>', self.reset)
 		
-		self.network = nn.load(network)
+		#self.network = nn.load(network)
+		self.network = network.NeuralNetwork()
+		self.network.train(200)
 		
 	def reset(self, event):
 		self.old_x = None
@@ -54,7 +56,7 @@ class Recognizer():
 		img = Image.open('images/out.png')
 		img = img.resize((28, 28)).convert('L')
 		
-		data = np.array(img).reshape(784).astype(float)
+		data = np.array(img).reshape((-1, 784)).astype(float)
 		data = np.array([(255 - x) / 255 for x in data])
 		
 		prediction = self.network.predict(data)
