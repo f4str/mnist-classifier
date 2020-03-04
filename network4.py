@@ -1,35 +1,46 @@
 '''
-feedforward neural network
-tensorflow
+convolutional neural network
+tensorflow 
 cross entropy loss function
-softmax activation function
+relu convolution activation function
+max pooling
+softmax fully connected activation function
 adam optimizer
 '''
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
+def convolution_layer(x, num_inputs, num_filters, filter_size=5, strides=1, k=2):
+	shape = [filter_size, filter_size, num_inputs, num_filters]
+	weights = tf.Variable(tf.truncated_normal(shape, stddev=0.05))
+	biases = tf.Variable(tf.constant(0.05, shape=[num_filters]))
+	layer = tf.nn.conv2d(x, filter=weights, strides=[1, strides, strides, 1], padding='SAME') + biases
+	layer = tf.nn.max_pool(layer, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
+	return tf.nn.relu(layer)
+
+def flatten_layer(layer):
+	layer_shape = layer.get_shape()
+	num_features = layer_shape[1:4].num_elements()
+	return tf.reshape(layer, [-1, num_features]), num_features
+
+def fully_connected_layer(x, num_inputs, num_outputs, relu=True):
+	weights = tf.Variable(tf.truncated_normal([num_inputs, num_outputs], stddev=0.05))
+	biases = tf.Variable(tf.constant(0.05, shape=[num_outputs]))
+	layer = tf.matmul(x, weights) + biases
+	if relu:
+		return tf.nn.relu(layer)
+	else:
+		return layer
+
+
 class NeuralNetwork:
 	def __init__(self):
-		self.learning_rate = 0.1
-		self.num_steps = 500
+		self.learning_rate = 0.001
 		self.batch_size = 128
 		
-		self.n_hidden_1 = 256
-		self.n_hidden_2 = 256
 		self.num_input = 784
 		self.num_classes = 10
-		
-		self.weights = [
-			tf.Variable(tf.random_normal([self.num_input, self.n_hidden_1])),
-			tf.Variable(tf.random_normal([self.n_hidden_1, self.n_hidden_2])),
-			tf.Variable(tf.random_normal([self.n_hidden_2, self.num_classes]))
-		]
-		self.biases = [
-			tf.Variable(tf.random_normal([self.n_hidden_1])),
-			tf.Variable(tf.random_normal([self.n_hidden_2])),
-			tf.Variable(tf.random_normal([self.num_classes]))
-		]
 		
 		self.load_data()
 		self.build()
@@ -41,31 +52,39 @@ class NeuralNetwork:
 		self.x = tf.placeholder(tf.float32, [None, self.num_input])
 		self.y = tf.placeholder(tf.float32, [None, self.num_classes])
 		
-		self.layer1 = tf.matmul(self.x, self.weights[0]) + self.biases[0]
-		self.layer2 = tf.matmul(self.layer1, self.weights[1]) + self.biases[1]
-		self.logits = tf.matmul(self.layer2, self.weights[2]) + self.biases[2]
-		self.prediction = tf.nn.softmax(self.logits)
+		# Layer 0 = Reshape: 784 -> 28x28@1
+		x_img = tf.reshape(self.x, shape=[-1, 28, 28, 1])
+		# Layer 1 = Convolution + Pooling: 28x28@1 -> 14x14@32
+		conv_layer1 = convolution_layer(x_img, num_inputs=1, num_filters=32)
+		# Layer 2 = Convolution + Pooling: 14x14@32 -> 7x7@64
+		conv_layer2 = convolution_layer(conv_layer1, num_inputs=32, num_filters=64)
+		# Layer 3 = Flatten: 7x7@64 -> 3136
+		flat_layer, num_features = flatten_layer(conv_layer2)
+		# Layer 4 = 3136 -> 512
+		fc_layer = fully_connected_layer(flat_layer, num_inputs=3136, num_outputs=512)
+		# Layer 5 = Logits: 512 -> 10
+		logits = fully_connected_layer(fc_layer, num_inputs=512, num_outputs=self.num_classes, relu=False)
 		
-		cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.y)
+		cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=self.y)
 		self.loss = tf.reduce_mean(cross_entropy)
-		
 		self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss)
 		
-		correct_prediction = tf.equal(tf.argmax(self.prediction, axis=1), tf.argmax(self.y, axis=1))
+		correct_prediction = tf.equal(tf.argmax(logits, axis=1), tf.argmax(self.y, axis=1))
 		self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+		self.prediction = tf.nn.softmax(logits)
 	
-	def train(self):
+	def train(self, epochs = 500):
 		with tf.Session() as session:
 			session.run(tf.global_variables_initializer())
 			
-			for i in range(self.num_steps):
+			for i in range(epochs):
 				x_batch, y_batch = self.data.train.next_batch(self.batch_size)
 				feed_dict = {self.x: x_batch, self.y: y_batch}
 				
 				session.run(self.optimizer, feed_dict=feed_dict)
 				
 				loss, acc = session.run([self.loss, self.accuracy], feed_dict=feed_dict)
-				print(f'step {i + 1}: loss = {loss:.4f}, training accuracy = {acc:.4f}')
+				print(f'epoch {i + 1}: loss = {loss:.4f}, training accuracy = {acc:.4f}')
 			print('training complete')
 			
 			feed_dict = {self.x: self.data.test.images, self.y: self.data.test.labels}
@@ -74,4 +93,4 @@ class NeuralNetwork:
 
 if __name__ == '__main__':
 	net = NeuralNetwork()
-	net.train()
+	net.train(200)
