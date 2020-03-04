@@ -1,30 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import data_loader
-import network1, network2
+import network2
 
-training_data = data_loader.load_training_data()
-validation_data = data_loader.load_validation_data()
-test_data = data_loader.load_test_data()
-print('data loaded')
+net = network2.NeuralNetwork()
+net.patience = 10000
 
-nn = network2.NeuralNetwork([784, 30, 10])
-fig, (ax1, ax2) = plt.subplots(1, 2)
-
-epochs = np.arange(500)
-training_cost, test_cost, training_accuracy, test_accuracy = nn.train(training_data[:500], len(epochs), test_data[:500])
+epochs = np.arange(1000)
+train_loss, train_acc, valid_loss, valid_acc = net.train(len(epochs))
 print('training_complete')
 
-ax1.set_title('Cost vs Epochs')
-ax1.set(xlabel='Epochs', ylabel='Cost')
-ax1.plot(epochs, training_cost, 'b', label='Training')
-ax1.plot(epochs, test_cost, 'r', label='Testing')
+fig, (ax1, ax2) = plt.subplots(1, 2)
+
+ax1.set_title('Loss vs Epochs')
+ax1.set(xlabel='Epochs', ylabel='Loss')
+ax1.plot(epochs, train_loss, 'b', label='Training')
+ax1.plot(epochs, valid_loss, 'r', label='Validation')
 ax1.legend()
 
 ax2.set_title('Accuracy vs Epochs')
 ax2.set(xlabel='Epochs', ylabel='Accuracy')
-ax2.plot(epochs, training_accuracy, 'b', label='Training')
-ax2.plot(epochs, test_accuracy, 'r', label='Testing')
+ax2.plot(epochs, train_acc, 'b', label='Training')
+ax2.plot(epochs, valid_acc, 'r', label='Validation')
 ax2.legend()
 
 plt.show()

@@ -41,7 +41,7 @@ class NeuralNetwork:
 		self.learning_rate = 0.001
 		self.batch_size = 128
 		
-		self.patience = 32
+		self.patience = 16
 		
 		self.num_input = 784
 		self.num_classes = 10
