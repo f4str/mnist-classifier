@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import network2
+import network1
 
-net = network2.NeuralNetwork()
+net = network1.NeuralNetwork()
 net.patience = 10000
 
-epochs = np.arange(1000)
+epochs = np.arange(500)
 train_loss, train_acc, valid_loss, valid_acc = net.train(len(epochs))
 print('training_complete')
 

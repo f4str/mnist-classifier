@@ -1,13 +1,14 @@
-'''
+"""
 feedforward neural network
 tensorflow
 cross entropy loss function
 softmax activation function
 adam optimizer
-'''
+"""
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+
 
 def linear_layer(input, num_inputs, num_outputs, relu=True):
 	weights = tf.Variable(tf.random_normal([num_inputs, num_outputs]))
@@ -64,7 +65,7 @@ class NeuralNetwork:
 		self.sess.run(tf.global_variables_initializer())
 		total_train_loss = []
 		total_train_acc = []
-		total_valid_loss = [] 
+		total_valid_loss = []
 		total_valid_acc = []
 		best_acc = 0
 		no_acc_change = 0
@@ -83,7 +84,12 @@ class NeuralNetwork:
 			total_valid_loss.append(valid_loss)
 			total_valid_acc.append(valid_acc)
 			
-			print(f'epoch {e + 1}: train loss = {train_loss:.4f}, train acc = {train_acc:.4f}, valid loss = {valid_loss:.4f}, valid acc = {valid_acc:.4f}')
+			print(f'epoch {e + 1}:',
+				f'train loss = {train_loss:.4f},',
+				f'train acc = {train_acc:.4f},',
+				f'valid loss = {valid_loss:.4f},',
+				f'valid acc = {valid_acc:.4f}'
+			)
 			
 			if valid_acc > best_acc:
 				best_acc = valid_acc
@@ -94,7 +100,7 @@ class NeuralNetwork:
 			if no_acc_change >= self.patience:
 				print('early stopping')
 				break
-			
+		
 		print('training complete')
 		
 		feed_dict = {self.x: self.X_test, self.y: self.y_test}
@@ -102,7 +108,7 @@ class NeuralNetwork:
 		print(f'test accuracy = {acc:.4f}')
 		
 		return total_train_loss, total_train_acc, total_valid_loss, total_valid_acc
-		
+
 
 if __name__ == '__main__':
 	net = NeuralNetwork()

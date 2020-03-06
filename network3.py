@@ -1,4 +1,4 @@
-'''
+"""
 convolutional neural network
 tensorflow 
 cross entropy loss function
@@ -6,10 +6,11 @@ relu convolution activation function
 max pooling
 softmax fully connected activation function
 adam optimizer
-'''
+"""
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+
 
 def convolution_layer(x, num_inputs, num_filters, filter_size=5, strides=1, k=2):
 	shape = [filter_size, filter_size, num_inputs, num_filters]
@@ -19,10 +20,12 @@ def convolution_layer(x, num_inputs, num_filters, filter_size=5, strides=1, k=2)
 	layer = tf.nn.max_pool(layer, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
 	return tf.nn.relu(layer)
 
+
 def flatten_layer(layer):
 	layer_shape = layer.get_shape()
 	num_features = layer_shape[1:4].num_elements()
 	return tf.reshape(layer, [-1, num_features]), num_features
+
 
 def fully_connected_layer(x, num_inputs, num_outputs, relu=True):
 	weights = tf.Variable(tf.truncated_normal([num_inputs, num_outputs], stddev=0.05))
@@ -86,7 +89,7 @@ class NeuralNetwork:
 		self.sess.run(tf.global_variables_initializer())
 		total_train_loss = []
 		total_train_acc = []
-		total_valid_loss = [] 
+		total_valid_loss = []
 		total_valid_acc = []
 		best_acc = 0
 		no_acc_change = 0
@@ -105,7 +108,12 @@ class NeuralNetwork:
 			total_valid_loss.append(valid_loss)
 			total_valid_acc.append(valid_acc)
 			
-			print(f'epoch {e + 1}: train loss = {train_loss:.4f}, train acc = {train_acc:.4f}, valid loss = {valid_loss:.4f}, valid acc = {valid_acc:.4f}')
+			print(f'epoch {e + 1}:',
+				f'train loss = {train_loss:.4f},',
+				f'train acc = {train_acc:.4f},',
+				f'valid loss = {valid_loss:.4f},',
+				f'valid acc = {valid_acc:.4f}'
+			)
 			
 			if valid_acc > best_acc:
 				best_acc = valid_acc
@@ -116,7 +124,7 @@ class NeuralNetwork:
 			if no_acc_change >= self.patience:
 				print('early stopping')
 				break
-			
+		
 		print('training complete')
 		
 		feed_dict = {self.x: self.X_test, self.y: self.y_test}
@@ -124,7 +132,7 @@ class NeuralNetwork:
 		print(f'test accuracy = {acc:.4f}')
 		
 		return total_train_loss, total_train_acc, total_valid_loss, total_valid_acc
-		
+
 
 if __name__ == '__main__':
 	net = NeuralNetwork()

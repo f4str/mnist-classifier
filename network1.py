@@ -1,13 +1,14 @@
-'''
+"""
 feedforward neural network
 tensorflow
 cross entropy loss function
 softmax activation function
 gradient descent optimizer
-'''
+"""
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+
 
 class NeuralNetwork:
 	def __init__(self):
@@ -31,7 +32,7 @@ class NeuralNetwork:
 		self.y_valid = mnist.validation.labels
 		self.X_test = mnist.test.images
 		self.y_test = mnist.test.labels
-		
+	
 	def build(self):
 		self.x = tf.placeholder(tf.float32, [None, self.num_input])
 		self.y = tf.placeholder(tf.float32, [None, self.num_classes])
@@ -52,7 +53,7 @@ class NeuralNetwork:
 		self.sess.run(tf.global_variables_initializer())
 		total_train_loss = []
 		total_train_acc = []
-		total_valid_loss = [] 
+		total_valid_loss = []
 		total_valid_acc = []
 		best_acc = 0
 		no_acc_change = 0
@@ -71,7 +72,12 @@ class NeuralNetwork:
 			total_valid_loss.append(valid_loss)
 			total_valid_acc.append(valid_acc)
 			
-			print(f'epoch {e + 1}: train loss = {train_loss:.4f}, train acc = {train_acc:.4f}, valid loss = {valid_loss:.4f}, valid acc = {valid_acc:.4f}')
+			print(f'epoch {e + 1}:',
+				f'train loss = {train_loss:.4f},',
+				f'train acc = {train_acc:.4f},',
+				f'valid loss = {valid_loss:.4f},',
+				f'valid acc = {valid_acc:.4f}'
+			)
 			
 			if valid_acc > best_acc:
 				best_acc = valid_acc
@@ -82,7 +88,7 @@ class NeuralNetwork:
 			if no_acc_change >= self.patience:
 				print('early stopping')
 				break
-			
+		
 		print('training complete')
 		
 		feed_dict = {self.x: self.X_test, self.y: self.y_test}
