@@ -14,10 +14,10 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 def convolution_layer(x, num_inputs, num_filters, filter_size=5, strides=1, k=2):
 	shape = [filter_size, filter_size, num_inputs, num_filters]
-	weights = tf.Variable(tf.truncated_normal(shape, stddev=0.05))
+	weights = tf.Variable(tf.random.truncated_normal(shape, stddev=0.05))
 	biases = tf.Variable(tf.constant(0.05, shape=[num_filters]))
 	layer = tf.nn.conv2d(x, filter=weights, strides=[1, strides, strides, 1], padding='SAME') + biases
-	layer = tf.nn.max_pool(layer, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
+	layer = tf.nn.max_pool2d(layer, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
 	return tf.nn.relu(layer)
 
 
@@ -72,7 +72,7 @@ class NeuralNetwork:
 		conv_layer2 = convolution_layer(conv_layer1, num_inputs=32, num_filters=64)
 		# Layer 3 = Flatten: 7x7@64 -> 3136
 		flat_layer, num_features = flatten_layer(conv_layer2)
-		# Layer 4 = 3136 -> 512
+		# Layer 4 = Fully Connected: 3136 -> 512
 		fc_layer = fully_connected_layer(flat_layer, num_inputs=3136, num_outputs=512)
 		# Layer 5 = Logits: 512 -> 10
 		logits = fully_connected_layer(fc_layer, num_inputs=512, num_outputs=self.num_classes, relu=False)

@@ -11,7 +11,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 
 def linear_layer(input, num_inputs, num_outputs, relu=True):
-	weights = tf.Variable(tf.random_normal([num_inputs, num_outputs]))
+	weights = tf.Variable(tf.random.normal([num_inputs, num_outputs]))
 	biases = tf.Variable(tf.zeros([num_outputs]))
 	layer = tf.matmul(input, weights) + biases
 	if relu:
