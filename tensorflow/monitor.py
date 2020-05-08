@@ -1,12 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import network1
+import feedforward
+import data_loader
 
-net = network1.NeuralNetwork()
-net.patience = 10000
+(X_train, y_train), (X_test, y_test) = data_loader.load_data(normalize=False)
+epochs = np.arange(100)
 
-epochs = np.arange(500)
-train_loss, train_acc, valid_loss, valid_acc = net.train(len(epochs))
+model = feedforward.FeedForward(early_stopping=False)
+train_loss, train_acc, valid_loss, valid_acc = model.fit(X_train, y_train, epochs=len(epochs))
+
 print('training_complete')
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
