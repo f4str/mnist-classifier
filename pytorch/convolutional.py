@@ -51,6 +51,13 @@ class FeedForward(nn.Module):
 		trainloader = torch.utils.data.DataLoader(train_set, batch_size=self.batch_size, shuffle=True)
 		validloader = torch.utils.data.DataLoader(valid_set, batch_size=self.batch_size)
 		
+		total_train_loss = []
+		total_train_acc = []
+		total_valid_loss = []
+		total_valid_acc = []
+		best_acc = 0
+		no_acc_change = 0
+		
 		for e in range(epochs):
 			# train on training data
 			total = 0
@@ -68,11 +75,14 @@ class FeedForward(nn.Module):
 				train_acc += (pred == labels).sum().item()
 				train_loss += loss.item()
 				
-				total += len(data)
-				print(f'epoch {e + 1}: {total} / {train_size}', end='\r')
+				if verbose:
+					total += len(data)
+					print(f'epoch {e + 1}: {total} / {train_size}', end='\r')
 			
 			train_loss /= train_size
 			train_acc /= train_size
+			total_train_loss.append(train_loss)
+			total_train_acc.append(train_acc)
 			
 			# test on validation data
 			valid_loss = 0
@@ -87,13 +97,31 @@ class FeedForward(nn.Module):
 			
 			valid_loss /= valid_size
 			valid_acc /= valid_size
+			total_valid_loss.append(valid_loss)
+			total_valid_acc.append(valid_acc)
 			
-			print(f'epoch {e + 1}:',
-				f'train loss = {train_loss:.4f},',
-				f'train acc = {train_acc:.4f},',
-				f'valid loss = {valid_loss:.4f},',
-				f'valid acc = {valid_acc:.4f}'
-			)
+			if verbose:
+				print(f'epoch {e + 1}:',
+					f'train loss = {train_loss:.4f},',
+					f'train acc = {train_acc:.4f},',
+					f'valid loss = {valid_loss:.4f},',
+					f'valid acc = {valid_acc:.4f}'
+				)
+			
+			# early stopping
+			if self.early_stopping:
+				if valid_acc > best_acc:
+					best_acc = valid_acc
+					no_acc_change = 0
+				else:
+					no_acc_change += 1
+				
+				if no_acc_change >= self.patience:
+					if verbose:
+						print('early stopping')
+					break
+			
+		return total_train_loss, total_train_acc, total_valid_loss, total_valid_acc
 	
 	def evaluate(self, X, y):
 		self.eval()
