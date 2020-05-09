@@ -23,7 +23,6 @@ def conv2d(inputs, filters, kernel_size=5, stride=1, padding='VALID', bias=True)
 		mean=0,
 		stddev=0.1
 	))
-	
 	layer = tf.nn.conv2d(
 		inputs,
 		filter=weights,

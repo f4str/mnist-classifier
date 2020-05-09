@@ -9,27 +9,18 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 class Convolutional:
-	def __init__(self, learning_rate=0.001, batch_size=128, early_stopping=True, patience=4):
+	def __init__(self, learning_rate=0.001, early_stopping=True, patience=4):
 		self.sess = tf.Session()
-		
-		self.learning_rate = learning_rate
-		self.batch_size = batch_size
 		self.early_stopping = early_stopping
 		self.patience = patience
 		
-		self.build()
+		self._build(learning_rate)
 	
-	def build(self):
+	def _build(self, learning_rate):
 		# inputs
 		self.X = tf.placeholder(tf.float32, [None, 28, 28])
 		self.y = tf.placeholder(tf.int32, [None])
 		one_hot_y = tf.one_hot(self.y, 10)
-		
-		# create batch iterator
-		dataset = tf.data.Dataset.from_tensor_slices((self.X, self.y))
-		dataset = dataset.shuffle(self.batch_size, reshuffle_each_iteration=True).batch(self.batch_size)
-		self.iterator = dataset.make_initializable_iterator()
-		self.X_batch, self.y_batch = self.iterator.get_next()
 		
 		# reshape: 28x28 -> 28x28@1
 		reshaped = tf.reshape(self.X, shape=[-1, 28, 28, 1])
@@ -48,24 +39,28 @@ class Convolutional:
 		
 		cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=one_hot_y)
 		self.loss = tf.reduce_mean(cross_entropy)
-		optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+		optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 		self.train_op = optimizer.minimize(self.loss)
 		
 		correct_prediction = tf.equal(tf.argmax(logits, axis=1), tf.argmax(one_hot_y, axis=1))
 		self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-		self.prediction = tf.argmax(logits)
+		self.prediction = tf.argmax(logits, axis=1)
 	
-	def fit(self, X, y, epochs=100, validation_split=0.2, verbose=True):
-		# split into train and validation sets
-		X = np.array(X)
-		y = np.array(y)
-		indices = np.random.permutation(X.shape[0])
-		split = int(validation_split * len(X))
+	def fit(self, X, y, epochs=100, batch_size=128, validation_split=0.2, verbose=True):
+		# split into training and validation sets
+		dataset = tf.data.Dataset.from_tensor_slices((X, y)).shuffle(len(X))
+		valid_size = int(validation_split * len(X))
+		train_size = len(X) - valid_size
 		
-		X_train = X[indices[split:]] 
-		y_train = y[indices[split:]]
-		X_valid = X[indices[:split]]
-		y_valid = y[indices[:split]]
+		train_dataset = dataset.skip(valid_size).shuffle(train_size, reshuffle_each_iteration=True).batch(batch_size)
+		valid_dataset = dataset.take(valid_size).batch(batch_size)
+		
+		# create batch iterator
+		train_iterator = train_dataset.make_initializable_iterator()
+		valid_iterator = valid_dataset.make_initializable_iterator()
+		
+		X_train, y_train = train_iterator.get_next()
+		X_valid, y_valid = valid_iterator.get_next()
 		
 		total_train_loss = []
 		total_train_acc = []
@@ -77,43 +72,58 @@ class Convolutional:
 		self.sess.run(tf.global_variables_initializer())
 		
 		for e in range(epochs):
-			# initialize batch iterator with train data
-			self.sess.run(
-				self.iterator.initializer, 
-				feed_dict={self.X: X_train, self.y: y_train}
-			)
+			# initialize training batch iterator
+			self.sess.run(train_iterator.initializer)
 			
 			# train on training data
-			total_loss = 0
-			total_acc = 0
+			train_loss = 0
+			train_acc = 0
 			try:
 				batch = 0
 				while True:
-					X_batch, y_batch = self.sess.run([self.X_batch, self.y_batch])
+					X_batch, y_batch = self.sess.run([X_train, y_train])
+					size = len(X_batch)
+					
 					_, loss, acc = self.sess.run(
 						[self.train_op, self.loss, self.accuracy], 
 						feed_dict={self.X: X_batch, self.y: y_batch}
 					)
-					total_loss += loss * len(y_batch)
-					total_acc += acc * len(y_batch)
+					train_loss += loss * size
+					train_acc += acc * size
 					
 					if verbose:
-						batch += len(y_batch)
-						print(f'epoch {e + 1}: {batch} / {len(y_train)}', end='\r')
+						batch += size
+						print(f'epoch {e + 1}: {batch} / {train_size}', end='\r')
 			except tf.errors.OutOfRangeError:
 				pass
 			
-			train_loss = total_loss / len(y_train)
-			train_acc = total_acc / len(y_train)
-			
-			# test on validation data
-			valid_loss, valid_acc = self.sess.run(
-				[self.loss, self.accuracy], 
-				feed_dict={self.X: X_valid, self.y: y_valid}
-			)
-			
+			train_loss /= train_size
+			train_acc /= train_size
 			total_train_loss.append(train_loss)
 			total_train_acc.append(train_acc)
+			
+			# initialize validation batch iterator
+			self.sess.run(valid_iterator.initializer)
+			
+			# test on validation data
+			valid_loss = 0
+			valid_acc = 0
+			try:
+				while True:
+					X_batch, y_batch = self.sess.run([X_valid, y_valid])
+					size = len(X_batch)
+					
+					loss, acc = self.sess.run(
+						[self.loss, self.accuracy], 
+						feed_dict={self.X: X_batch, self.y: y_batch}
+					)
+					valid_loss += loss * size
+					valid_acc += acc * size
+			except tf.errors.OutOfRangeError:
+				pass
+			
+			valid_loss /= valid_size
+			valid_acc /= valid_size
 			total_valid_loss.append(valid_loss)
 			total_valid_acc.append(valid_acc)
 			
@@ -145,7 +155,7 @@ class Convolutional:
 		return loss, acc
 	
 	def predict(self, X):
-		y_pred = self.sess.run(self.prediction, feed_dict={self.X, X})
+		y_pred = self.sess.run(self.prediction, feed_dict={self.X: X})
 		return y_pred
 
 
@@ -156,3 +166,8 @@ if __name__ == '__main__':
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
+	
+	y_pred = model.predict(X_test)
+	print(y_pred)
+	print(y_test)
+	print(np.mean(y_pred == y_test))
