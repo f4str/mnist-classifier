@@ -48,7 +48,7 @@ class Convolutional:
 	
 	def fit(self, X, y, epochs=100, batch_size=128, validation_split=0.2, verbose=True):
 		# split into training and validation sets
-		dataset = tf.data.Dataset.from_tensor_slices((X, y)).shuffle(len(X))
+		dataset = tf.data.Dataset.from_tensor_slices((X, y)).shuffle(len(X), reshuffle_each_iteration=False)
 		valid_size = int(validation_split * len(X))
 		train_size = len(X) - valid_size
 		

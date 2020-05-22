@@ -4,7 +4,7 @@ Implementations of neural network classifiers for the MNIST data set using vario
 
 ## Libraries
 - TensorFlow 1.15
-- Tensorflow 2.2
+- TensorFlow 2.2
 - Keras
 - PyTorch
 
