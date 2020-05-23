@@ -1,3 +1,4 @@
+import time
 import tensorflow as tf
 import numpy as np
 import layers
@@ -22,15 +23,13 @@ class FeedForward:
 		one_hot_y = tf.one_hot(self.y, 10)
 		
 		# reshape: 28x28 -> 784
-		reshaped = tf.reshape(self.X, shape=[-1, 784])
+		reshaped = tf.reshape(self.X, [-1, 784])
 		# linear: 784 -> 512 + relu
-		linear1 = layers.linear(reshaped, num_outputs=512)
-		linear1 = tf.nn.relu(linear1)
+		linear1 = tf.nn.relu(layers.linear(reshaped, 512))
 		# linear: 512 -> 128 + relu
-		linear2 = layers.linear(linear1, num_outputs=128)
-		linear2 = tf.nn.relu(linear2)
+		linear2 = tf.nn.relu(layers.linear(linear1, 128))
 		# linear: 128 -> 10
-		logits = layers.linear(linear2, num_outputs=10)
+		logits = layers.linear(linear2, 10)
 		
 		cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=one_hot_y)
 		self.loss = tf.reduce_mean(cross_entropy)
@@ -76,13 +75,14 @@ class FeedForward:
 			self.sess.run(train_iterator.initializer)
 			
 			if verbose:
+				start = time.time()
 				print(f'epoch {e + 1} / {epochs}:')
 			
 			# train on training data
+			total = 0
 			train_loss = 0
 			train_acc = 0
 			try:
-				total = 0
 				while True:
 					X_batch, y_batch = self.sess.run([X_train, y_train])
 					size = len(X_batch)
@@ -95,8 +95,9 @@ class FeedForward:
 					train_acc += acc * size
 					
 					if verbose:
+						current = time.time()
 						total += size
-						print(f'[{total} / {train_size}]', 
+						print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 							f'train loss = {(train_loss / total):.4f},',
 							f'train acc = {(train_acc / total):.4f}',
 							end='\r'
@@ -135,7 +136,8 @@ class FeedForward:
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				end = time.time()
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',

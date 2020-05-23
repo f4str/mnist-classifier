@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,44 +7,29 @@ import torch.optim as optim
 import torchvision
 
 
-class LeNet(nn.Module):
+class Recurrent(nn.Module):
 	def __init__(self, lr=0.001, early_stopping=True, patience=4):
 		super().__init__()
 		self.early_stopping = early_stopping
 		self.patience = patience
 		
-		self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5)
-		self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5)
-		self.linear1 = nn.Linear(in_features=1024, out_features=256)
-		self.linear2 = nn.Linear(in_features=256, out_features=64)
-		self.linear3 = nn.Linear(in_features=64, out_features=10)
+		self.hidden_size = 64
+		self.num_layers = 2
+		
+		self.gru = nn.GRU(28, self.hidden_size, self.num_layers, batch_first=True)
+		self.linear = nn.Linear(self.hidden_size, 10)
 		
 		self.criterion = nn.CrossEntropyLoss()
 		self.optimizer = optim.Adam(self.parameters(), lr=lr)
 	
 	def forward(self, x):
-		# reshape: 28x28 -> 1@28x28
-		x = x.view(-1, 1, 28, 28)
-		# convolution: 1@28x28 -> 32@24x24 + relu
-		x = self.conv1(x)
-		x = F.relu(x)
-		# max pooling: 32@24x24 -> 32@12x12
-		x = F.max_pool2d(x, kernel_size=2)
-		# convolution: 32@12x12 -> 64@8x8
-		x = self.conv2(x)
-		x = F.relu(x)
-		# max pooling: 64@8x8 -> 64@4x4
-		x = F.max_pool2d(x, kernel_size=2)
-		# flatten: 12x12@16 -> 1024
-		x = x.view(-1, 1024)
-		# linear: 1024 -> 256 + relu
-		x = self.linear1(x)
-		x = F.relu(x)
-		# linear: 256 -> 64 + relu
-		x = self.linear2(x)
-		x = F.relu(x)
+		# init hidden state
+		h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+		
+		# gru: 28x28 -> 64x28 (x2)
+		x, h = self.gru(x, h0)
 		# linear: 64 -> 10
-		x = self.linear3(x)
+		x = self.linear(x[:, -1, :])
 		
 		return x
 	
@@ -69,6 +55,7 @@ class LeNet(nn.Module):
 		
 		for e in range(epochs):
 			if verbose:
+				start = time.time()
 				print(f'epoch {e + 1} / {epochs}:')
 			
 			# train on training data
@@ -88,8 +75,9 @@ class LeNet(nn.Module):
 				train_loss += loss.item() * len(data)
 				
 				if verbose:
+					current = time.time()
 					total += len(data)
-					print(f'[{total} / {train_size}]', 
+					print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 						f'train loss = {(train_loss / total):.4f},',
 						f'train acc = {(train_acc / total):.4f}',
 						end='\r'
@@ -118,7 +106,8 @@ class LeNet(nn.Module):
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				end = time.time()
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',
@@ -174,8 +163,8 @@ if __name__ == "__main__":
 	X_test = testset.data.numpy().astype(np.float32) / 255
 	y_test = testset.targets.numpy()
 	
-	model = LeNet()
-	model.fit(X_train, y_train, epochs=2)
+	model = Recurrent()
+	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
 	

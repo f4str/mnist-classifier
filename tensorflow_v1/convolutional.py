@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import tensorflow as tf
 import layers
@@ -22,19 +23,24 @@ class Convolutional:
 		one_hot_y = tf.one_hot(self.y, 10)
 		
 		# reshape: 28x28 -> 28x28@1
-		reshaped = tf.reshape(self.X, shape=[-1, 28, 28, 1])
-		# convolution: 28x28@1 -> 28x28@16 + relu
-		conv = layers.conv2d(reshaped, filters=16, padding='SAME')
-		conv = tf.nn.relu(conv)
-		# max pooling: 28x28@16 -> 14x14@16
-		pool = layers.maxpool2d(conv, padding='SAME')
-		# flatten: 14x14@16 -> 3136
-		flat = layers.flatten(pool)
-		# linear: 3136 -> 512 + relu
-		linear = layers.linear(flat, num_outputs=512)
-		linear = tf.nn.relu(linear)
-		# linear: 512 -> 10
-		logits = layers.linear(linear, num_outputs=10)
+		reshaped = tf.reshape(self.X, [-1, 28, 28, 1])
+		# convolution: 28x28@1 -> 24x24@32 + relu
+		conv1 = tf.nn.relu(layers.conv2d(reshaped, 32, (5, 5)))
+		# max pooling: 24x24@32 -> 12x12@32
+		pool1 = layers.maxpool2d(conv1, (2, 2))
+		# convolution: 12x12@32 -> 8x8@64 + relu
+		conv2 = layers.conv2d(pool1, 64, (5, 5))
+		conv2 = tf.nn.relu(conv2)
+		# max pooling: 8x8@64 -> 4x4@64
+		pool2 = layers.maxpool2d(conv2, (2, 2))
+		# flatten: 4x4@64 -> 1024
+		flat = layers.flatten(pool2)
+		# linear: 1024 -> 256 + relu
+		fc1 = tf.nn.relu(layers.linear(flat, 256))
+		# linear: 256 -> 64 + relu
+		fc2 = tf.nn.relu(layers.linear(fc1, 64))
+		# linear: 128 -> 10
+		logits = layers.linear(fc2, 10)
 		
 		cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=one_hot_y)
 		self.loss = tf.reduce_mean(cross_entropy)
@@ -80,13 +86,14 @@ class Convolutional:
 			self.sess.run(train_iterator.initializer)
 			
 			if verbose:
+				start = time.time()
 				print(f'epoch {e + 1} / {epochs}:')
 			
 			# train on training data
+			total = 0
 			train_loss = 0
 			train_acc = 0
 			try:
-				total = 0
 				while True:
 					X_batch, y_batch = self.sess.run([X_train, y_train])
 					size = len(X_batch)
@@ -99,8 +106,9 @@ class Convolutional:
 					train_acc += acc * size
 					
 					if verbose:
+						current = time.time()
 						total += size
-						print(f'[{total} / {train_size}]', 
+						print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 							f'train loss = {(train_loss / total):.4f},',
 							f'train acc = {(train_acc / total):.4f}',
 							end='\r'
@@ -139,7 +147,8 @@ class Convolutional:
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				end = time.time()
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',

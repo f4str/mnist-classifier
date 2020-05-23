@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -12,22 +13,20 @@ class FeedForward(nn.Module):
 		self.early_stopping = early_stopping
 		self.patience = patience
 		
-		self.linear1 = nn.Linear(in_features=784, out_features=512)
-		self.linear2 = nn.Linear(in_features=512, out_features=128)
-		self.linear3 = nn.Linear(in_features=128, out_features=10)
+		self.linear1 = nn.Linear(784, 512)
+		self.linear2 = nn.Linear(512, 128)
+		self.linear3 = nn.Linear(128, 10)
 		
 		self.criterion = nn.CrossEntropyLoss()
 		self.optimizer = optim.Adam(self.parameters(), lr=lr)
 	
 	def forward(self, x):
-		# reshape: 28x28 -> 784
-		x = x.view(-1, 784)
+		# flatten: 28x28 -> 784
+		x = x.view(x.size(0), 784)
 		# linear: 784 -> 512 + relu
-		x = self.linear1(x)
-		x = F.relu(x)
+		x = F.relu(self.linear1(x))
 		# linear: 512 -> 128 + relu
-		x = self.linear2(x)
-		x = F.relu(x)
+		x = F.relu(self.linear2(x))
 		# linear: 128 -> 10
 		x = self.linear3(x)
 		
@@ -54,6 +53,7 @@ class FeedForward(nn.Module):
 		no_acc_change = 0
 		
 		for e in range(epochs):
+			start = time.time()
 			if verbose:
 				print(f'epoch {e + 1} / {epochs}:')
 			
@@ -73,9 +73,10 @@ class FeedForward(nn.Module):
 				train_acc += (preds == labels).sum().item()
 				train_loss += loss.item() * len(data)
 				
+				current = time.time()
 				if verbose:
 					total += len(data)
-					print(f'[{total} / {train_size}]', 
+					print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 						f'train loss = {(train_loss / total):.4f},',
 						f'train acc = {(train_acc / total):.4f}',
 						end='\r'
@@ -103,8 +104,9 @@ class FeedForward(nn.Module):
 			total_valid_loss.append(valid_loss)
 			total_valid_acc.append(valid_acc)
 			
+			end = time.time()
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',

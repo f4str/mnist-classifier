@@ -16,10 +16,10 @@ def linear(inputs, num_outputs, bias=True):
 	
 	return layer
 
-def conv2d(inputs, filters, kernel_size=5, stride=1, padding='VALID', bias=True):
+def conv2d(inputs, filters, kernel_size=(5, 5), stride=1, padding='VALID', bias=True):
 	channels = inputs.get_shape()[-1]
 	weights = tf.Variable(tf.random.truncated_normal(
-		shape=[kernel_size, kernel_size, channels, filters],
+		shape=[*kernel_size, channels, filters],
 		mean=0,
 		stddev=0.1
 	))
@@ -37,12 +37,12 @@ def conv2d(inputs, filters, kernel_size=5, stride=1, padding='VALID', bias=True)
 	return layer
 
 
-def maxpool2d(inputs, kernel_size=2, stride=None, padding='VALID'):
+def maxpool2d(inputs, kernel_size=(2, 2), stride=None, padding='VALID'):
 	stride = stride or kernel_size
 	layer = tf.nn.max_pool2d(
 		inputs,
-		ksize=[1, kernel_size, kernel_size, 1],
-		strides=[1, stride, stride, 1],
+		ksize=[1, *kernel_size, 1],
+		strides=[1, *stride, 1],
 		padding=padding
 	)
 	

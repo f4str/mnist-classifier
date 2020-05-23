@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,34 +7,40 @@ import torch.optim as optim
 import torchvision
 
 
-class FeedForward(nn.Module):
+class Convolutional(nn.Module):
 	def __init__(self, lr=0.001, early_stopping=True, patience=4):
 		super().__init__()
 		self.early_stopping = early_stopping
 		self.patience = patience
 		
-		self.conv = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=5)
-		self.linear1 = nn.Linear(in_features=2304, out_features=512)
-		self.linear2 = nn.Linear(in_features=512, out_features=10)
+		self.conv1 = nn.Conv2d(1, 32, 5)
+		self.conv2 = nn.Conv2d(32, 64, 5)
+		self.fc1 = nn.Linear(1024, 256)
+		self.fc2 = nn.Linear(256, 64)
+		self.fc3 = nn.Linear(64, 10)
 		
 		self.criterion = nn.CrossEntropyLoss()
 		self.optimizer = optim.Adam(self.parameters(), lr=lr)
 	
 	def forward(self, x):
 		# reshape: 28x28 -> 1@28x28
-		x = x.view(-1, 1, 28, 28)
-		# convolution: 1@28x28 -> 16@24x24 + relu
-		x = self.conv(x)
-		x = F.relu(x)
-		# max pooling: 16@24x24 -> 16@12x12
-		x = F.max_pool2d(x, kernel_size=2)
-		# flatten: 16@12x12 -> 2304
-		x = x.view(-1, 2304)
-		# linear: 2304 -> 512 + relu
-		x = self.linear1(x)
-		x = F.relu(x)
-		# linear: 512 -> 10
-		x = self.linear2(x)
+		x = x.view(x.size(0), 1, 28, 28)
+		# convolution: 1@28x28 -> 32@24x24 + relu
+		x = F.relu(self.conv1(x))
+		# max pooling: 32@24x24 -> 32@12x12
+		x = F.max_pool2d(x, 2)
+		# convolution: 32@12x12 -> 64@8x8
+		x = F.relu(self.conv2(x))
+		# max pooling: 64@8x8 -> 64@4x4
+		x = F.max_pool2d(x, 2)
+		# flatten: 64@12x12 -> 1024
+		x = x.view(x.size(0), 1024)
+		# linear: 1024 -> 256 + relu
+		x = F.relu(self.fc1(x))
+		# linear: 256 -> 64 + relu
+		x = F.relu(self.fc2(x))
+		# linear: 64 -> 10
+		x = self.fc3(x)
 		
 		return x
 	
@@ -58,6 +65,7 @@ class FeedForward(nn.Module):
 		no_acc_change = 0
 		
 		for e in range(epochs):
+			start = time.time()
 			if verbose:
 				print(f'epoch {e + 1} / {epochs}:')
 			
@@ -77,9 +85,10 @@ class FeedForward(nn.Module):
 				train_acc += (preds == labels).sum().item()
 				train_loss += loss.item() * len(data)
 				
+				current = time.time()
 				if verbose:
 					total += len(data)
-					print(f'[{total} / {train_size}]', 
+					print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 						f'train loss = {(train_loss / total):.4f},',
 						f'train acc = {(train_acc / total):.4f}',
 						end='\r'
@@ -107,8 +116,9 @@ class FeedForward(nn.Module):
 			total_valid_loss.append(valid_loss)
 			total_valid_acc.append(valid_acc)
 			
+			end = time.time()
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',
@@ -153,6 +163,30 @@ class FeedForward(nn.Module):
 			preds = outputs.argmax(dim=1).numpy()
 		
 		return preds
+	
+	def evaluate(self, X, y):
+		self.eval()
+		
+		data = torch.Tensor(X)
+		labels = torch.LongTensor(y)
+		
+		with torch.no_grad():
+			outputs = self(data)
+			preds = outputs.argmax(dim=1)
+			
+			loss = self.criterion(outputs, labels).item()
+			acc = (preds == labels).double().mean().item()
+		
+		return loss, acc
+	
+	def predict(self, X):
+		self.eval()
+		
+		with torch.no_grad():
+			outputs = self(torch.Tensor(X))
+			preds = outputs.argmax(dim=1).numpy()
+		
+		return preds
 
 
 if __name__ == "__main__":
@@ -164,7 +198,7 @@ if __name__ == "__main__":
 	X_test = testset.data.numpy().astype(np.float32) / 255
 	y_test = testset.targets.numpy()
 	
-	model = FeedForward()
+	model = Convolutional()
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')

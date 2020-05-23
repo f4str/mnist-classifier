@@ -1,15 +1,14 @@
-# MNIST Handwritten Digit Classifier
+# MNIST Handwritten Digit Classifiers
 
-Implementations of neural network classifiers for the MNIST data set using various libraries. 
+Implementations of different types of neural network classifiers for the MNIST data set using various libraries. 
 
 ## Libraries
+- PyTorch
+- Keras
 - TensorFlow 1.15
 - TensorFlow 2.2
-- Keras
-- PyTorch
 
 ## Models
 - FeedForward
 - Convolutional
-- LeNet
-
+- Recurrent

@@ -1,3 +1,4 @@
+import time
 import tensorflow as tf
 import numpy as np
 
@@ -9,23 +10,38 @@ class Convolutional(tf.keras.Model):
 		self.patience = patience
 		
 		self.reshape = tf.keras.layers.Reshape((28, 28, 1))
-		self.conv = tf.keras.layers.Conv2D(filters=16, kernel_size=(3, 3), activation='relu')
-		self.pool = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))
+		self.conv1 = tf.keras.layers.Conv2D(64, (5, 5), activation='relu')
+		self.pool1 = tf.keras.layers.MaxPooling2D((2, 2))
+		self.conv2 = tf.keras.layers.Conv2D(32, (5, 5), activation='relu')
+		self.pool2 = tf.keras.layers.MaxPooling2D((2, 2))
 		self.flatten = tf.keras.layers.Flatten()
-		self.dense1 = tf.keras.layers.Dense(512, activation='relu')
-		self.dense2 = tf.keras.layers.Dense(10)
+		self.fc1 = tf.keras.layers.Dense(256, activation='relu')
+		self.fc2 = tf.keras.layers.Dense(64, activation='relu')
+		self.fc3 = tf.keras.layers.Dense(10)
 		
 		self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 		self.accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 		
 	def call(self, x):
+		# reshape: 28x28 -> 28x28@1
 		x = self.reshape(x)
-		x = self.conv(x)
-		x = self.pool(x)
+		# convolution: 28x28@1 -> 24x24@32 + relu
+		x = self.conv1(x)
+		# max pooling: 24x24@32 -> 12x12@32
+		x = self.pool1(x)
+		# convolution: 12x12@32 -> 8x8@64
+		x = self.conv2(x)
+		# max pooling: 8x8@64 -> 4x4@64
+		x = self.pool2(x)
+		# flatten: 12x12@16 -> 1024
 		x = self.flatten(x)
-		x = self.dense1(x)
-		x = self.dense2(x)
+		# linear: 1024 -> 256 + relu
+		x = self.fc1(x)
+		# linear: 256 -> 64 + relu
+		x = self.fc2(x)
+		# linear: 64 -> 10
+		x = self.fc3(x)
 		
 		return x
 	
@@ -47,6 +63,7 @@ class Convolutional(tf.keras.Model):
 		
 		for e in range(epochs):
 			if verbose:
+				start = time.time()
 				print(f'epoch {e + 1} / {epochs}:')
 			
 			# train on training data
@@ -68,8 +85,9 @@ class Convolutional(tf.keras.Model):
 				train_acc += acc.numpy() * batch
 				
 				if verbose:
+					current = time.time()
 					total += batch
-					print(f'[{total} / {train_size}]', 
+					print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 						f'train loss = {(train_loss / total):.4f},',
 						f'train acc = {(train_acc / total):.4f}',
 						end='\r'
@@ -98,7 +116,8 @@ class Convolutional(tf.keras.Model):
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				end = time.time()
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',

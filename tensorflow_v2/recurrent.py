@@ -1,37 +1,29 @@
+import time
 import tensorflow as tf
 import numpy as np
 
 
-class LeNet(tf.keras.Model):
+class Recurrent(tf.keras.Model):
 	def __init__(self, learning_rate=0.001, early_stopping=True, patience=4):
 		super().__init__()
 		self.early_stopping = early_stopping
 		self.patience = patience
 		
-		self.reshape = tf.keras.layers.Reshape((28, 28, 1))
-		self.conv1 = tf.keras.layers.Conv2D(64, (3, 3), activation='relu')
-		self.pool1 = tf.keras.layers.MaxPooling2D((2, 2))
-		self.conv2 = tf.keras.layers.Conv2D(32, (3, 3), activation='relu')
-		self.pool2 = tf.keras.layers.MaxPooling2D((2, 2))
-		self.flatten = tf.keras.layers.Flatten()
-		self.dense1 = tf.keras.layers.Dense(256, activation='relu')
-		self.dense2 = tf.keras.layers.Dense(64, activation='relu')
-		self.dense3 = tf.keras.layers.Dense(10)
+		self.gru1 = tf.keras.layers.GRU(64, return_sequences=True)
+		self.gru2 = tf.keras.layers.GRU(64)
+		self.dense = tf.keras.layers.Dense(10)
 		
 		self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 		self.accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 		
 	def call(self, x):
-		x = self.reshape(x)
-		x = self.conv1(x)
-		x = self.pool1(x)
-		x = self.conv2(x)
-		x = self.pool2(x)
-		x = self.flatten(x)
-		x = self.dense1(x)
-		x = self.dense2(x)
-		x = self.dense3(x)
+		# gru: 28x28 -> 64x28
+		x = self.gru1(x)
+		# gru: 64x28 -> 64
+		x = self.gru2(x)
+		# linear: 64 -> 10
+		x = self.dense(x)
 		
 		return x
 	
@@ -53,6 +45,7 @@ class LeNet(tf.keras.Model):
 		
 		for e in range(epochs):
 			if verbose:
+				start = time.time()
 				print(f'epoch {e + 1} / {epochs}:')
 			
 			# train on training data
@@ -74,8 +67,9 @@ class LeNet(tf.keras.Model):
 				train_acc += acc.numpy() * batch
 				
 				if verbose:
+					current = time.time()
 					total += batch
-					print(f'[{total} / {train_size}]', 
+					print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 						f'train loss = {(train_loss / total):.4f},',
 						f'train acc = {(train_acc / total):.4f}',
 						end='\r'
@@ -104,7 +98,8 @@ class LeNet(tf.keras.Model):
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				end = time.time()
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',
@@ -145,7 +140,7 @@ if __name__ == '__main__':
 	X_train = X_train.astype(np.float32) / 255
 	X_test = X_test.astype(np.float32) / 255
 	
-	model = LeNet()
+	model = Recurrent()
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')

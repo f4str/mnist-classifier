@@ -2,17 +2,12 @@ import numpy as np
 from tensorflow import keras
 
 
-def lenet():
+def recurrent():
 	model = keras.Sequential()
-	model.add(keras.layers.Reshape((28, 28, 1)))
-	model.add(keras.layers.Conv2D(filters=32, kernel_size=(3, 3), activation='relu'))
-	model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-	model.add(keras.layers.Conv2D(filters=64, kernel_size=(3, 3), activation='relu'))
-	model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-	model.add(keras.layers.Flatten())
-	model.add(keras.layers.Dense(units=256, activation='relu'))
-	model.add(keras.layers.Dense(units=64, activation='relu'))
-	model.add(keras.layers.Dense(units=10, activation='softmax'))
+	model.add(keras.layers.Input((28, 28)))
+	model.add(keras.layers.GRU(64, return_sequences=True))
+	model.add(keras.layers.GRU(64))
+	model.add(keras.layers.Dense(10, activation='softmax'))
 	model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 	
 	return model
@@ -23,7 +18,7 @@ if __name__ == "__main__":
 	X_train = X_train.astype(np.float32) / 255
 	X_test = X_test.astype(np.float32) / 255
 	
-	model = lenet()
+	model = recurrent()
 	model.fit(X_train, y_train, batch_size=128, epochs=10, validation_split=0.2)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')

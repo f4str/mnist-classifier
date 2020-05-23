@@ -1,3 +1,4 @@
+import time
 import tensorflow as tf
 import numpy as np
 
@@ -18,9 +19,13 @@ class FeedForward(tf.keras.Model):
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 		
 	def call(self, x):
+		# flatten: 28x28 -> 784
 		x = self.flatten(x)
+		# linear: 784 -> 512 + relu
 		x = self.dense1(x)
+		# linear: 512 -> 128 + relu
 		x = self.dense2(x)
+		# linear: 128 -> 10
 		x = self.dense3(x)
 		
 		return x
@@ -34,11 +39,6 @@ class FeedForward(tf.keras.Model):
 		train_dataset = dataset.skip(valid_size).shuffle(train_size, reshuffle_each_iteration=True).batch(batch_size)
 		valid_dataset = dataset.take(valid_size).batch(batch_size)
 		
-		train_size = len(X)
-		train_dataset = tf.data.Dataset.from_tensor_slices((X, y)).shuffle(train_size).batch(batch_size)
-		valid_size = len(X_test)
-		valid_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(batch_size)
-		
 		total_train_loss = []
 		total_train_acc = []
 		total_valid_loss = []
@@ -48,6 +48,7 @@ class FeedForward(tf.keras.Model):
 		
 		for e in range(epochs):
 			if verbose:
+				start = time.time()
 				print(f'epoch {e + 1} / {epochs}:')
 			
 			# train on training data
@@ -69,8 +70,9 @@ class FeedForward(tf.keras.Model):
 				train_acc += acc.numpy() * batch
 				
 				if verbose:
+					current = time.time()
 					total += batch
-					print(f'[{total} / {train_size}]', 
+					print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 						f'train loss = {(train_loss / total):.4f},',
 						f'train acc = {(train_acc / total):.4f}',
 						end='\r'
@@ -99,7 +101,8 @@ class FeedForward(tf.keras.Model):
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'[{total} / {train_size}]',
+				end = time.time()
+				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',

@@ -4,12 +4,16 @@ from tensorflow import keras
 
 def convolutional():
 	model = keras.Sequential()
+	model.add(keras.layers.Input((28, 28)))
 	model.add(keras.layers.Reshape((28, 28, 1)))
-	model.add(keras.layers.Conv2D(filters=16, kernel_size=(3, 3), activation='relu'))
-	model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+	model.add(keras.layers.Conv2D(32, (5, 5), activation='relu'))
+	model.add(keras.layers.MaxPooling2D((2, 2)))
+	model.add(keras.layers.Conv2D(64, (5, 5), activation='relu'))
+	model.add(keras.layers.MaxPooling2D((2, 2)))
 	model.add(keras.layers.Flatten())
-	model.add(keras.layers.Dense(units=512, activation='relu'))
-	model.add(keras.layers.Dense(units=10, activation='softmax'))
+	model.add(keras.layers.Dense(256, activation='relu'))
+	model.add(keras.layers.Dense(64, activation='relu'))
+	model.add(keras.layers.Dense(10, activation='softmax'))
 	model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 	
 	return model
