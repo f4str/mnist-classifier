@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import data_loader
 import layers
 
 import os
@@ -43,11 +42,16 @@ class FeedForward:
 		self.prediction = tf.argmax(logits, axis=1)
 	
 	def fit(self, X, y, epochs=100, batch_size=128, validation_split=0.2, verbose=True):
+		# shuffle input data
+		p = np.random.permutation(len(X))
+		X = np.array(X)[p]
+		y = np.array(y)[p]
+		
 		# split into training and validation sets
-		dataset = tf.data.Dataset.from_tensor_slices((X, y)).shuffle(len(X), reshuffle_each_iteration=False)
 		valid_size = int(validation_split * len(X))
 		train_size = len(X) - valid_size
 		
+		dataset = tf.data.Dataset.from_tensor_slices((X, y))
 		train_dataset = dataset.skip(valid_size).shuffle(train_size, reshuffle_each_iteration=True).batch(batch_size)
 		valid_dataset = dataset.take(valid_size).batch(batch_size)
 		
@@ -71,11 +75,14 @@ class FeedForward:
 			# initialize training batch iterator
 			self.sess.run(train_iterator.initializer)
 			
+			if verbose:
+				print(f'epoch {e + 1} / {epochs}:')
+			
 			# train on training data
 			train_loss = 0
 			train_acc = 0
 			try:
-				batch = 0
+				total = 0
 				while True:
 					X_batch, y_batch = self.sess.run([X_train, y_train])
 					size = len(X_batch)
@@ -88,8 +95,12 @@ class FeedForward:
 					train_acc += acc * size
 					
 					if verbose:
-						batch += size
-						print(f'epoch {e + 1}: {batch} / {train_size}', end='\r')
+						total += size
+						print(f'[{total} / {train_size}]', 
+							f'train loss = {(train_loss / total):.4f},',
+							f'train acc = {(train_acc / total):.4f}',
+							end='\r'
+						)
 			except tf.errors.OutOfRangeError:
 				pass
 			
@@ -124,7 +135,7 @@ class FeedForward:
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'epoch {e + 1}:',
+				print(f'[{total} / {train_size}]',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',
@@ -156,7 +167,9 @@ class FeedForward:
 
 
 if __name__ == '__main__':
-	(X_train, y_train), (X_test, y_test) = data_loader.load_data(normalize=False)
+	(X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+	X_train = X_train.astype(np.float32) / 255
+	X_test = X_test.astype(np.float32) / 255
 	
 	model = FeedForward()
 	model.fit(X_train, y_train, epochs=10)

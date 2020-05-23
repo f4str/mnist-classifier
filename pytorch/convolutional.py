@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import data_loader
+import torchvision
 
 
 class FeedForward(nn.Module):
@@ -58,6 +58,9 @@ class FeedForward(nn.Module):
 		no_acc_change = 0
 		
 		for e in range(epochs):
+			if verbose:
+				print(f'epoch {e + 1} / {epochs}:')
+			
 			# train on training data
 			total = 0
 			train_loss = 0
@@ -76,7 +79,11 @@ class FeedForward(nn.Module):
 				
 				if verbose:
 					total += len(data)
-					print(f'epoch {e + 1}: {total} / {train_size}', end='\r')
+					print(f'[{total} / {train_size}]', 
+						f'train loss = {(train_loss / total):.4f},',
+						f'train acc = {(train_acc / total):.4f}',
+						end='\r'
+					)
 			
 			train_loss /= train_size
 			train_acc /= train_size
@@ -101,7 +108,7 @@ class FeedForward(nn.Module):
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'epoch {e + 1}:',
+				print(f'[{total} / {train_size}]',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',
@@ -149,8 +156,13 @@ class FeedForward(nn.Module):
 
 
 if __name__ == "__main__":
-	X_train, y_train = data_loader.load_train(normalize=False)
-	X_test, y_test = data_loader.load_test(normalize=False)
+	trainset = torchvision.datasets.MNIST('./data', transform=None, download=True, train=True)
+	X_train = trainset.data.numpy().astype(np.float32) / 255
+	y_train = trainset.targets.numpy()
+	
+	testset = torchvision.datasets.MNIST('./data', transform=None, download=True, train=False)
+	X_test = testset.data.numpy().astype(np.float32) / 255
+	y_test = testset.targets.numpy()
 	
 	model = FeedForward()
 	model.fit(X_train, y_train, epochs=10)

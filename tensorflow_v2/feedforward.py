@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import data_loader
 
 
 class FeedForward(tf.keras.Model):
@@ -35,6 +34,11 @@ class FeedForward(tf.keras.Model):
 		train_dataset = dataset.skip(valid_size).shuffle(train_size, reshuffle_each_iteration=True).batch(batch_size)
 		valid_dataset = dataset.take(valid_size).batch(batch_size)
 		
+		train_size = len(X)
+		train_dataset = tf.data.Dataset.from_tensor_slices((X, y)).shuffle(train_size).batch(batch_size)
+		valid_size = len(X_test)
+		valid_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(batch_size)
+		
 		total_train_loss = []
 		total_train_acc = []
 		total_valid_loss = []
@@ -43,6 +47,9 @@ class FeedForward(tf.keras.Model):
 		no_acc_change = 0
 		
 		for e in range(epochs):
+			if verbose:
+				print(f'epoch {e + 1} / {epochs}:')
+			
 			# train on training data
 			total = 0
 			train_loss = 0
@@ -63,7 +70,11 @@ class FeedForward(tf.keras.Model):
 				
 				if verbose:
 					total += batch
-					print(f'epoch {e + 1}: {total} / {train_size}', end='\r')
+					print(f'[{total} / {train_size}]', 
+						f'train loss = {(train_loss / total):.4f},',
+						f'train acc = {(train_acc / total):.4f}',
+						end='\r'
+					)
 			
 			train_loss /= train_size
 			train_acc /= train_size
@@ -88,7 +99,7 @@ class FeedForward(tf.keras.Model):
 			total_valid_acc.append(valid_acc)
 			
 			if verbose:
-				print(f'epoch {e + 1}:',
+				print(f'[{total} / {train_size}]',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
 					f'valid loss = {valid_loss:.4f},',
@@ -125,10 +136,12 @@ class FeedForward(tf.keras.Model):
 
 
 if __name__ == '__main__':
-	(X_train, y_train), (X_test, y_test) = data_loader.load_data(normalize=False)
+	(X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+	X_train = X_train.astype(np.float32) / 255
+	X_test = X_test.astype(np.float32) / 255
 	
 	model = FeedForward()
-	model.fit(X_train, y_train, epochs=50)
+	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
 	
