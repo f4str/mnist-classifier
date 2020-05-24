@@ -166,8 +166,3 @@ if __name__ == "__main__":
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
-	
-	y_pred = model.predict(X_test)
-	print(y_pred)
-	print(y_test)
-	print(np.mean(y_pred == y_test))

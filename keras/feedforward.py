@@ -23,8 +23,3 @@ if __name__ == "__main__":
 	model.fit(X_train, y_train, batch_size=128, epochs=10, validation_split=0.2)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
-	
-	y_pred = np.argmax(model.predict(X_test), axis=-1)
-	print(y_pred)
-	print(y_test)
-	print(np.mean(y_pred == y_test))

@@ -10,12 +10,12 @@ class Convolutional(tf.keras.Model):
 		self.patience = patience
 		
 		self.reshape = tf.keras.layers.Reshape((28, 28, 1))
-		self.conv1 = tf.keras.layers.Conv2D(64, (5, 5), activation='relu')
+		self.conv1 = tf.keras.layers.Conv2D(16, (5, 5), activation='relu')
 		self.pool1 = tf.keras.layers.MaxPooling2D((2, 2))
 		self.conv2 = tf.keras.layers.Conv2D(32, (5, 5), activation='relu')
 		self.pool2 = tf.keras.layers.MaxPooling2D((2, 2))
 		self.flatten = tf.keras.layers.Flatten()
-		self.fc1 = tf.keras.layers.Dense(256, activation='relu')
+		self.fc1 = tf.keras.layers.Dense(128, activation='relu')
 		self.fc2 = tf.keras.layers.Dense(64, activation='relu')
 		self.fc3 = tf.keras.layers.Dense(10)
 		
@@ -26,17 +26,17 @@ class Convolutional(tf.keras.Model):
 	def call(self, x):
 		# reshape: 28x28 -> 28x28@1
 		x = self.reshape(x)
-		# convolution: 28x28@1 -> 24x24@32 + relu
+		# convolution: 28x28@1 -> 24x24@16 + relu
 		x = self.conv1(x)
-		# max pooling: 24x24@32 -> 12x12@32
+		# max pooling: 24x24@16 -> 12x12@16
 		x = self.pool1(x)
-		# convolution: 12x12@32 -> 8x8@64
+		# convolution: 12x12@16 -> 8x8@32
 		x = self.conv2(x)
-		# max pooling: 8x8@64 -> 4x4@64
+		# max pooling: 8x8@32 -> 4x4@32
 		x = self.pool2(x)
-		# flatten: 12x12@16 -> 1024
+		# flatten: 12x12@32 -> 512
 		x = self.flatten(x)
-		# linear: 1024 -> 256 + relu
+		# linear: 512 -> 128 + relu
 		x = self.fc1(x)
 		# linear: 256 -> 64 + relu
 		x = self.fc2(x)
@@ -162,8 +162,3 @@ if __name__ == '__main__':
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
-	
-	y_pred = model.predict(X_test)
-	print(y_pred)
-	print(y_test)
-	print(np.mean(y_pred == y_test))

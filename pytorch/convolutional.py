@@ -13,10 +13,10 @@ class Convolutional(nn.Module):
 		self.early_stopping = early_stopping
 		self.patience = patience
 		
-		self.conv1 = nn.Conv2d(1, 32, 5)
-		self.conv2 = nn.Conv2d(32, 64, 5)
-		self.fc1 = nn.Linear(1024, 256)
-		self.fc2 = nn.Linear(256, 64)
+		self.conv1 = nn.Conv2d(1, 16, 5)
+		self.conv2 = nn.Conv2d(16, 32, 5)
+		self.fc1 = nn.Linear(512, 128)
+		self.fc2 = nn.Linear(128, 64)
 		self.fc3 = nn.Linear(64, 10)
 		
 		self.criterion = nn.CrossEntropyLoss()
@@ -25,19 +25,19 @@ class Convolutional(nn.Module):
 	def forward(self, x):
 		# reshape: 28x28 -> 1@28x28
 		x = x.view(x.size(0), 1, 28, 28)
-		# convolution: 1@28x28 -> 32@24x24 + relu
+		# convolution: 1@28x28 -> 16@24x24 + relu
 		x = F.relu(self.conv1(x))
-		# max pooling: 32@24x24 -> 32@12x12
+		# max pooling: 16@24x24 -> 32@12x12
 		x = F.max_pool2d(x, 2)
-		# convolution: 32@12x12 -> 64@8x8
+		# convolution: 16@12x12 -> 32@8x8
 		x = F.relu(self.conv2(x))
-		# max pooling: 64@8x8 -> 64@4x4
+		# max pooling: 32@8x8 -> 32@4x4
 		x = F.max_pool2d(x, 2)
-		# flatten: 64@12x12 -> 1024
-		x = x.view(x.size(0), 1024)
-		# linear: 1024 -> 256 + relu
+		# flatten: 32@12x12 -> 512
+		x = x.view(x.size(0), 512)
+		# linear: 512 -> 128 + relu
 		x = F.relu(self.fc1(x))
-		# linear: 256 -> 64 + relu
+		# linear: 128 -> 64 + relu
 		x = F.relu(self.fc2(x))
 		# linear: 64 -> 10
 		x = self.fc3(x)
@@ -202,8 +202,3 @@ if __name__ == "__main__":
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
-	
-	y_pred = model.predict(X_test)
-	print(y_pred)
-	print(y_test)
-	print(np.mean(y_pred == y_test))

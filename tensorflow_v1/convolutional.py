@@ -24,22 +24,21 @@ class Convolutional:
 		
 		# reshape: 28x28 -> 28x28@1
 		reshaped = tf.reshape(self.X, [-1, 28, 28, 1])
-		# convolution: 28x28@1 -> 24x24@32 + relu
-		conv1 = tf.nn.relu(layers.conv2d(reshaped, 32, (5, 5)))
-		# max pooling: 24x24@32 -> 12x12@32
+		# convolution: 28x28@1 -> 24x24@16 + relu
+		conv1 = tf.nn.relu(layers.conv2d(reshaped, 16, (5, 5)))
+		# max pooling: 24x24@16 -> 12x12@16
 		pool1 = layers.maxpool2d(conv1, (2, 2))
-		# convolution: 12x12@32 -> 8x8@64 + relu
-		conv2 = layers.conv2d(pool1, 64, (5, 5))
-		conv2 = tf.nn.relu(conv2)
-		# max pooling: 8x8@64 -> 4x4@64
+		# convolution: 12x12@16 -> 8x8@32 + relu
+		conv2 = tf.nn.relu(layers.conv2d(pool1, 32, (5, 5)))
+		# max pooling: 8x8@32 -> 4x4@32
 		pool2 = layers.maxpool2d(conv2, (2, 2))
-		# flatten: 4x4@64 -> 1024
+		# flatten: 4x4@32 -> 512
 		flat = layers.flatten(pool2)
-		# linear: 1024 -> 256 + relu
-		fc1 = tf.nn.relu(layers.linear(flat, 256))
-		# linear: 256 -> 64 + relu
+		# linear: 512 -> 128 + relu
+		fc1 = tf.nn.relu(layers.linear(flat, 128))
+		# linear: 128 -> 64 + relu
 		fc2 = tf.nn.relu(layers.linear(fc1, 64))
-		# linear: 128 -> 10
+		# linear: 64 -> 10
 		logits = layers.linear(fc2, 10)
 		
 		cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=one_hot_y)
@@ -188,8 +187,3 @@ if __name__ == '__main__':
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
-	
-	y_pred = model.predict(X_test)
-	print(y_pred)
-	print(y_test)
-	print(np.mean(y_pred == y_test))

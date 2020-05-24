@@ -22,10 +22,10 @@ class FeedForward:
 		self.y = tf.placeholder(tf.int32, [None])
 		one_hot_y = tf.one_hot(self.y, 10)
 		
-		# reshape: 28x28 -> 784
-		reshaped = tf.reshape(self.X, [-1, 784])
+		# flatten: 28x28 -> 784
+		flat = layers.flatten(self.X)
 		# linear: 784 -> 512 + relu
-		linear1 = tf.nn.relu(layers.linear(reshaped, 512))
+		linear1 = tf.nn.relu(layers.linear(flat, 512))
 		# linear: 512 -> 128 + relu
 		linear2 = tf.nn.relu(layers.linear(linear1, 128))
 		# linear: 128 -> 10
@@ -177,8 +177,3 @@ if __name__ == '__main__':
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')
-	
-	y_pred = model.predict(X_test)
-	print(y_pred)
-	print(y_test)
-	print(np.mean(y_pred == y_test))
