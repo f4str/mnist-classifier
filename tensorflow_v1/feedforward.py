@@ -1,11 +1,8 @@
 import time
-import tensorflow as tf
 import numpy as np
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import layers
-
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 class FeedForward:
@@ -20,7 +17,6 @@ class FeedForward:
 		# inputs
 		self.X = tf.placeholder(tf.float32, [None, 28, 28])
 		self.y = tf.placeholder(tf.int32, [None])
-		one_hot_y = tf.one_hot(self.y, 10)
 		
 		# flatten: 28x28 -> 784
 		flat = layers.flatten(self.X)
@@ -30,15 +26,16 @@ class FeedForward:
 		linear2 = tf.nn.relu(layers.linear(linear1, 128))
 		# linear: 128 -> 10
 		logits = layers.linear(linear2, 10)
+		# softmax cross entropy loss function
+		cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=self.y)
 		
-		cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=one_hot_y)
 		self.loss = tf.reduce_mean(cross_entropy)
 		optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 		self.train_op = optimizer.minimize(self.loss)
 		
-		correct_prediction = tf.equal(tf.argmax(logits, axis=1), tf.argmax(one_hot_y, axis=1))
+		self.prediction = tf.argmax(logits, axis=1, output_type=tf.dtypes.int32)
+		correct_prediction = tf.equal(self.prediction, self.y)
 		self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-		self.prediction = tf.argmax(logits, axis=1)
 	
 	def fit(self, X, y, epochs=100, batch_size=128, validation_split=0.2, verbose=True):
 		# shuffle input data

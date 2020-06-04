@@ -8,10 +8,11 @@ import torchvision
 
 
 class Recurrent(nn.Module):
-	def __init__(self, lr=0.001, early_stopping=True, patience=4):
+	def __init__(self, lr=0.001, early_stopping=True, patience=4, cuda=True):
 		super().__init__()
 		self.early_stopping = early_stopping
 		self.patience = patience
+		self.device = torch.device('cuda:0' if cuda and torch.cuda.is_available() else 'cpu')
 		
 		self.hidden_size = 64
 		self.num_layers = 2
@@ -21,10 +22,12 @@ class Recurrent(nn.Module):
 		
 		self.criterion = nn.CrossEntropyLoss()
 		self.optimizer = optim.Adam(self.parameters(), lr=lr)
+		
+		self.to(self.device)
 	
 	def forward(self, x):
 		# init hidden state
-		h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+		h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(self.device)
 		
 		# gru: 28x28 -> 64x28 (x2)
 		x, h = self.gru(x, h0)
@@ -37,7 +40,7 @@ class Recurrent(nn.Module):
 		self.train()
 		
 		# split data into training and validation sets
-		dataset = torch.utils.data.TensorDataset(torch.Tensor(X), torch.LongTensor(y))
+		dataset = torch.utils.data.TensorDataset(torch.FloatTensor(X), torch.LongTensor(y))
 		valid_size = int(validation_split * len(X))
 		train_size = len(X) - valid_size
 		train_set, valid_set = torch.utils.data.random_split(dataset, [train_size, valid_size])
@@ -54,8 +57,8 @@ class Recurrent(nn.Module):
 		no_acc_change = 0
 		
 		for e in range(epochs):
+			start = time.time()
 			if verbose:
-				start = time.time()
 				print(f'epoch {e + 1} / {epochs}:')
 			
 			# train on training data
@@ -63,6 +66,9 @@ class Recurrent(nn.Module):
 			train_loss = 0
 			train_acc = 0
 			for data, labels in trainloader:
+				data = data.to(self.device)
+				labels = labels.to(self.device)
+				
 				self.optimizer.zero_grad()
 				outputs = self(data)
 				preds = outputs.argmax(dim=1)
@@ -74,8 +80,8 @@ class Recurrent(nn.Module):
 				train_acc += (preds == labels).sum().item()
 				train_loss += loss.item() * len(data)
 				
+				current = time.time()
 				if verbose:
-					current = time.time()
 					total += len(data)
 					print(f'[{total} / {train_size}] - {(current - start):.2f} s -', 
 						f'train loss = {(train_loss / total):.4f},',
@@ -93,6 +99,9 @@ class Recurrent(nn.Module):
 			valid_acc = 0
 			with torch.no_grad():
 				for data, labels in validloader:
+					data = data.to(self.device)
+					labels = labels.to(self.device)
+				
 					outputs = self(data)
 					preds = outputs.argmax(dim=1)
 					
@@ -105,8 +114,8 @@ class Recurrent(nn.Module):
 			total_valid_loss.append(valid_loss)
 			total_valid_acc.append(valid_acc)
 			
+			end = time.time()
 			if verbose:
-				end = time.time()
 				print(f'[{total} / {train_size}] - {(end - start):.2f} s -',
 					f'train loss = {train_loss:.4f},',
 					f'train acc = {train_acc:.4f},',
@@ -131,11 +140,11 @@ class Recurrent(nn.Module):
 	
 	def evaluate(self, X, y):
 		self.eval()
-		
-		data = torch.Tensor(X)
-		labels = torch.LongTensor(y)
-		
+			
 		with torch.no_grad():
+			data = torch.FloatTensor(X).to(self.device)
+			labels = torch.LongTensor(y).to(self.device)
+			
 			outputs = self(data)
 			preds = outputs.argmax(dim=1)
 			
@@ -148,8 +157,9 @@ class Recurrent(nn.Module):
 		self.eval()
 		
 		with torch.no_grad():
-			outputs = self(torch.Tensor(X))
-			preds = outputs.argmax(dim=1).numpy()
+			data = torch.FloatTensor(X).to(self.device)
+			outputs = self(data)
+			preds = outputs.argmax(dim=1).cpu().numpy()
 		
 		return preds
 

@@ -5,8 +5,8 @@ Implementations of different types of neural network classifiers for the MNIST d
 ## Libraries
 - PyTorch
 - Keras
-- TensorFlow 1.15
-- TensorFlow 2.2
+- TensorFlow v1
+- TensorFlow v2
 
 ## Models
 - FeedForward

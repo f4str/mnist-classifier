@@ -8,10 +8,11 @@ import torchvision
 
 
 class Convolutional(nn.Module):
-	def __init__(self, lr=0.001, early_stopping=True, patience=4):
+	def __init__(self, lr=0.001, early_stopping=True, patience=4, cuda=True):
 		super().__init__()
 		self.early_stopping = early_stopping
 		self.patience = patience
+		self.device = torch.device('cuda:0' if cuda and torch.cuda.is_available() else 'cpu')
 		
 		self.conv1 = nn.Conv2d(1, 16, 5)
 		self.conv2 = nn.Conv2d(16, 32, 5)
@@ -21,6 +22,8 @@ class Convolutional(nn.Module):
 		
 		self.criterion = nn.CrossEntropyLoss()
 		self.optimizer = optim.Adam(self.parameters(), lr=lr)
+		
+		self.to(self.device)
 	
 	def forward(self, x):
 		# reshape: 28x28 -> 1@28x28
@@ -48,7 +51,7 @@ class Convolutional(nn.Module):
 		self.train()
 		
 		# split data into training and validation sets
-		dataset = torch.utils.data.TensorDataset(torch.Tensor(X), torch.LongTensor(y))
+		dataset = torch.utils.data.TensorDataset(torch.FloatTensor(X), torch.LongTensor(y))
 		valid_size = int(validation_split * len(X))
 		train_size = len(X) - valid_size
 		train_set, valid_set = torch.utils.data.random_split(dataset, [train_size, valid_size])
@@ -74,6 +77,9 @@ class Convolutional(nn.Module):
 			train_loss = 0
 			train_acc = 0
 			for data, labels in trainloader:
+				data = data.to(self.device)
+				labels = labels.to(self.device)
+				
 				self.optimizer.zero_grad()
 				outputs = self(data)
 				preds = outputs.argmax(dim=1)
@@ -104,6 +110,9 @@ class Convolutional(nn.Module):
 			valid_acc = 0
 			with torch.no_grad():
 				for data, labels in validloader:
+					data = data.to(self.device)
+					labels = labels.to(self.device)
+					
 					outputs = self(data)
 					preds = outputs.argmax(dim=1)
 					
@@ -143,10 +152,10 @@ class Convolutional(nn.Module):
 	def evaluate(self, X, y):
 		self.eval()
 		
-		data = torch.Tensor(X)
-		labels = torch.LongTensor(y)
-		
 		with torch.no_grad():
+			data = torch.FloatTensor(X).to(self.device)
+			labels = torch.LongTensor(y).to(self.device)
+			
 			outputs = self(data)
 			preds = outputs.argmax(dim=1)
 			
@@ -154,23 +163,14 @@ class Convolutional(nn.Module):
 			acc = (preds == labels).double().mean().item()
 		
 		return loss, acc
-	
-	def predict(self, X):
-		self.eval()
-		
-		with torch.no_grad():
-			outputs = self(torch.Tensor(X))
-			preds = outputs.argmax(dim=1).numpy()
-		
-		return preds
 	
 	def evaluate(self, X, y):
 		self.eval()
 		
-		data = torch.Tensor(X)
-		labels = torch.LongTensor(y)
-		
 		with torch.no_grad():
+			data = torch.FloatTensor(X).to(self.device)
+			labels = torch.LongTensor(y).to(self.device)
+			
 			outputs = self(data)
 			preds = outputs.argmax(dim=1)
 			
@@ -183,8 +183,9 @@ class Convolutional(nn.Module):
 		self.eval()
 		
 		with torch.no_grad():
-			outputs = self(torch.Tensor(X))
-			preds = outputs.argmax(dim=1).numpy()
+			data = torch.FloatTensor(X).to(self.device)
+			outputs = self(data)
+			preds = outputs.argmax(dim=1).cpu().numpy()
 		
 		return preds
 
