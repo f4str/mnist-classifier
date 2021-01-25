@@ -164,21 +164,6 @@ class Convolutional(nn.Module):
 		
 		return loss, acc
 	
-	def evaluate(self, X, y):
-		self.eval()
-		
-		with torch.no_grad():
-			data = torch.FloatTensor(X).to(self.device)
-			labels = torch.LongTensor(y).to(self.device)
-			
-			outputs = self(data)
-			preds = outputs.argmax(dim=1)
-			
-			loss = self.criterion(outputs, labels).item()
-			acc = (preds == labels).double().mean().item()
-		
-		return loss, acc
-	
 	def predict(self, X):
 		self.eval()
 		
@@ -192,11 +177,11 @@ class Convolutional(nn.Module):
 
 if __name__ == "__main__":
 	trainset = torchvision.datasets.MNIST('./data', transform=None, download=True, train=True)
-	X_train = trainset.data.numpy().astype(np.float32) / 255
+	X_train = trainset.data.numpy() / 255
 	y_train = trainset.targets.numpy()
 	
 	testset = torchvision.datasets.MNIST('./data', transform=None, download=True, train=False)
-	X_test = testset.data.numpy().astype(np.float32) / 255
+	X_test = testset.data.numpy() / 255
 	y_test = testset.targets.numpy()
 	
 	model = Convolutional()

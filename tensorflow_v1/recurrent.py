@@ -5,7 +5,7 @@ tf.disable_v2_behavior()
 import layers
 
 
-class FeedForward:
+class Recurrent:
 	def __init__(self, learning_rate=0.001, early_stopping=True, patience=4):
 		self.sess = tf.Session()
 		self.early_stopping = early_stopping
@@ -18,14 +18,12 @@ class FeedForward:
 		self.X = tf.placeholder(tf.float64, [None, 28, 28])
 		self.y = tf.placeholder(tf.int64, [None])
 		
-		# flatten: 28x28 -> 784
-		flat = layers.flatten(self.X)
-		# linear: 784 -> 512 + relu
-		linear1 = tf.nn.relu(layers.linear(flat, 512))
-		# linear: 512 -> 128 + relu
-		linear2 = tf.nn.relu(layers.linear(linear1, 128))
-		# linear: 128 -> 10
-		logits = layers.linear(linear2, 10)
+		# gru: 28x28 -> 64x28
+		gru1 = layers.gru(self.X, 64, return_sequences=True)
+		# gru: 64x28 -> 64
+		gru2 = layers.gru(gru1, 64)
+		# linear: 64 -> 10
+		logits = layers.linear(gru2, 10)
 		# softmax cross entropy loss function
 		cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=self.y)
 		
@@ -170,7 +168,7 @@ if __name__ == '__main__':
 	X_train = X_train / 255
 	X_test = X_test / 255
 	
-	model = FeedForward()
+	model = Recurrent()
 	model.fit(X_train, y_train, epochs=10)
 	loss, acc = model.evaluate(X_test, y_test)
 	print(f'test loss: {loss:.4f}, test acc: {acc:.4f}')

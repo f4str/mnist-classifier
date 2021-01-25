@@ -15,8 +15,8 @@ class Convolutional:
 	
 	def _build(self, learning_rate):
 		# inputs
-		self.X = tf.placeholder(tf.float32, [None, 28, 28])
-		self.y = tf.placeholder(tf.int32, [None])
+		self.X = tf.placeholder(tf.float64, [None, 28, 28])
+		self.y = tf.placeholder(tf.int64, [None])
 		
 		# reshape: 28x28 -> 28x28@1
 		reshaped = tf.reshape(self.X, [-1, 28, 28, 1])
@@ -43,7 +43,7 @@ class Convolutional:
 		optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 		self.train_op = optimizer.minimize(self.loss)
 		
-		self.prediction = tf.argmax(logits, axis=1, output_type=tf.dtypes.int32)
+		self.prediction = tf.argmax(logits, axis=1)
 		correct_prediction = tf.equal(self.prediction, self.y)
 		self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 	
@@ -177,8 +177,8 @@ class Convolutional:
 
 if __name__ == '__main__':
 	(X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-	X_train = X_train.astype(np.float32) / 255
-	X_test = X_test.astype(np.float32) / 255
+	X_train = X_train / 255
+	X_test = X_test / 255
 	
 	model = Convolutional()
 	model.fit(X_train, y_train, epochs=10)

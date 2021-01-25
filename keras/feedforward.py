@@ -16,8 +16,8 @@ def feedforward():
 
 if __name__ == "__main__":
 	(X_train, y_train), (X_test, y_test) = keras.datasets.mnist.load_data()
-	X_train = X_train.astype(np.float32) / 255
-	X_test = X_test.astype(np.float32) / 255
+	X_train = X_train / 255
+	X_test = X_test / 255
 	
 	model = feedforward()
 	model.fit(X_train, y_train, batch_size=128, epochs=10, validation_split=0.2)

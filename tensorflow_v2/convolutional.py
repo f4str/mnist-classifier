@@ -155,8 +155,8 @@ class Convolutional(tf.keras.Model):
 
 if __name__ == '__main__':
 	(X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-	X_train = X_train.astype(np.float32) / 255
-	X_test = X_test.astype(np.float32) / 255
+	X_train = X_train / 255
+	X_test = X_test / 255
 	
 	model = Convolutional()
 	model.fit(X_train, y_train, epochs=10)
